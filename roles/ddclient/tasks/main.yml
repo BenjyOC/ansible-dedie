@@ -1,0 +1,12 @@
+---
+- name: Install ddclient
+  apt:
+    name: ddclient
+  when: ddclient_install
+
+- name: Configure ddclient
+  template:
+    src: ddclient.conf.j2
+    dest: /etc/ddclient.conf
+  notify: restart ddclient
+  when: ddclient_install

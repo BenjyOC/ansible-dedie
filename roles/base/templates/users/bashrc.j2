@@ -1,0 +1,17 @@
+#
+# {{ ansible_managed }}
+#
+umask 022
+
+export LS_OPTIONS='--color=auto'
+eval `dircolors -b`
+
+alias ls='ls $LS_OPTIONS'
+alias ll='ls $LS_OPTIONS -alh'
+alias l=ll
+
+export EDITOR=vim
+
+{% for line in item.value.bashrc %}
+{{ line }}
+{% endfor %}

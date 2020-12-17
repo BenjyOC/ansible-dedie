@@ -1,0 +1,74 @@
+---
+- name: Create groups (from 'grps')
+  group:
+    name: "{{ item.key }}"
+    gid: "{{ item.value.gid | default(omit) }}"
+    system: "{{ item.value.system | default(omit) }}"
+  loop: "{{ grps | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Create groups (from 'users')
+  group:
+    name: "{{ item.value.group }}"
+    gid: "{{ item.value.gid | default(omit) }}"
+  when: "'group' in item.value"
+  loop: "{{ users | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Create users
+  user:
+    name: "{{ item.key }}"
+    append: true
+    shell: /bin/bash
+    createhome: true
+    password: "{{ item.value.password | default('*') }}"
+    uid: "{{ item.value.uid | default(omit) }}"
+    group: "{{ item.value.group | default(omit) }}"
+    groups: "{{ item.value.groups | default(omit) }}"
+  loop: "{{ users | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: ~user/.ssh/
+  file:
+    path: "~{{ item.key }}/.ssh/"
+    owner: "{{ item.key }}"
+    group: "{{ item.value.group | default(item.key) }}"
+    mode: 0700
+    state: directory
+  when: "'authorized_keys' in item.value"
+  loop: "{{ users | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: ~user/.ssh/authorized_keys
+  template:
+    dest: "~{{ item.key }}/.ssh/authorized_keys"
+    src: users/authorized_keys.j2
+    owner: "{{ item.key }}"
+    group: "{{ item.value.group | default(item.key) }}"
+    mode: 0444
+  when: "'authorized_keys' in item.value"
+  loop: "{{ users | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Install shells
+  apt:
+    name:
+      - bash
+      - bash-completion
+
+- name: ~user/.bashrc
+  template:
+    src: users/bashrc.j2
+    dest: "~{{ item.key }}/.bashrc"
+    owner: "{{ item.key }}"
+    group: "{{ item.value.group | default(item.key) }}"
+    mode: 0444
+  when: "'bashrc' in item.value"
+  loop: "{{ users | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"

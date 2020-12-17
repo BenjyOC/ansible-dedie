@@ -1,0 +1,45 @@
+---
+- hosts: all
+  become: yes
+  vars:
+    hostname: dedie-01
+    default_architecture: amd64
+    users:
+      brabiller:
+        group: brabiller
+        password: '$6$QRALC3NvGts38$koNrTYYFLXaBNcY2IiIwdfx0k6y24Bo5oiwAidmH9zdww.T1oUuNIW1yLn.EonlqgHQNk5qNCJ4DUTpidv.GZ.'
+        authorized_keys:
+          - 'ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAq1+5M7nrTo3wLCZgcfcQRpnm8++ab8FHYozu5jJHBdJuj6L8tUn58HbNJZp3JYSEva+2972GjocA0ga6Fmqx4ya9CFEZLlYkgJwWPxu7IpIoThTYJVfDbOg9aqiHiOiwIkDv41C7iVMjE9/Nv1hxXCpjqPvwa556ALfMszLrPfpURwXwMiyA2bAQMBpg1pVdYunV4JIwQkTmUfUGdvYA7eCg97T19RlweZUUVyELUuWMqmVXCPYrIq74DyLIu1TlH1/5EeyWxVOFHVVBAHCkGPjuCQW9fqZvFM+qf95MnwSgXHcm/6iGzS1t1lRFhLsXo/S3/5Oqoz/i8xZjkGrwxw== bracloud'
+  roles:
+    - base
+    - postfix
+    - geerlingguy.docker
+    - prometheus-blackbox-exporter
+    - prometheus-node-exporter
+
+  tasks:
+    - pip:
+        name:
+          - docker
+
+    - name: Create web network
+      docker_network:
+        name: web
+
+    - name: Create traefik directory
+      file:
+        path: /etc/opt/traefik
+        state: directory
+        recurse: yes
+
+    - name: Touch acme.json for traefik
+      file:
+        path: /etc/opt/traefik/acme.json
+        state: touch
+        mode: '0600'
+
+    - name: Copy traefik.toml config file
+      copy:
+        src: traefik/traefik.toml
+        dest: /etc/opt/traefik/traefik.toml
+        mode: '0640'
